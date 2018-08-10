@@ -139,7 +139,7 @@ class SerialInterface
     void help()
     {
         Serial.println("Commands:");
-        print_entry("help", F("- show this help menu"));
+        print_entry("help", F("[COMMAND] - Print help for COMMAND or all commands"));
         print_entry("id", F("- show part name and eval board name"));
         const Command* commands = command_dict.get_values();
         for (int i = 0; i < command_dict.get_num_entries(); ++i) {
@@ -147,18 +147,39 @@ class SerialInterface
         }
     }
     
+    void help_command(const char* command_str)
+    {
+        if (strcmp(command_str, "help") == 0) {
+            print_entry("help", F("[COMMAND] - Print help for COMMAND or all commands"));
+            return;
+        }
+        
+        if (strcmp(command_str, "id") == 0) {
+            print_entry("id", F("- show part name and eval board name"));
+            return;
+        }
+        
+        Command command;
+        if (!command_dict.get_value(command_str, command))
+        {
+            help();
+        } else {
+            print_entry(command.name, command.description);
+        }
+    }
+    
     void id()
     {
         Serial.print(part_name);
-        Serial.print(",");
+        Serial.print(F(","));
         Serial.println(board_name);
     }
     
     void print_error_code(const __FlashStringHelper* code)
     {
-        Serial.print("error [");
+        Serial.print(F("error ["));
         Serial.print(code);
-        Serial.print("]: ");
+        Serial.print(F("]: "));
     }
 
 public:
@@ -176,7 +197,7 @@ public:
     void greet()
     {
         Serial.print(part_name);
-        Serial.print(",");
+        Serial.print(F(","));
         Serial.print(board_name);
         Serial.println(F(" enter 'help' for commands"));
     }
@@ -214,7 +235,11 @@ public:
         if (num_args == -1) { return; }
 
         if (strcmp(command_buff, "help") == 0) {
-            help();
+            if (num_args == 1) {
+                help_command(arg_buff[0]);
+            } else {
+                help();
+            }
             return;
         }
         
