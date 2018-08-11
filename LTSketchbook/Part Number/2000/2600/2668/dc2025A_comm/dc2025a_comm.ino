@@ -77,6 +77,7 @@ ongoing work.
 #include "ltc2668_comm.h"
 #include <SPI.h>
 #include <Wire.h>
+#include "ParseNum.h"
 
 // Globals
 //////////
@@ -89,73 +90,6 @@ Ltc2668State ltc2668_state;
 // Helper Functions
 ///////////////////
 
-//bool parse_uint16(const char* str, uint16_t* value)
-//{
-//    uint8_t len = strlen(str);
-//    char* endptr;
-//    long long_value = strtol(str, &endptr, 10);
-//    uint8_t num_read = endptr - str;
-//
-//    if (num_read == 0 || num_read != len) {
-//        s_inter.error(F("bad_arg"), F("Expected integer, got "), str);
-//        return false;
-//    } else if (long_value < -(1 << 15) || long_value > (1 << 15) - 1) {
-//        s_inter.error(F("bad_arg"), F("Value out of range: "), long_value);
-//        return false;
-//    }
-//    value = uint16_t(long_value);
-//    return true;
-//}
-
-bool parse_uint16(const char* str, uint16_t* value)
-{
-    long long_value = 0;
-    for (int i = 0; str[i] != '\0'; ++i) {
-        if (str[i] < '0' || str[i] > '9') {
-            s_inter.error(F("bad_arg"), F("Expected integer, got "), str);
-            return false;
-        }
-        
-        long_value *= 10;
-        long_value += str[i] - '0';
-    }
-    if (long_value < 0 || long_value > 0xFFFF) {
-        s_inter.error(F("bad_arg"), F("Value out of range: "), long_value);
-        return false;
-    }
-    *value = uint16_t(long_value);
-    return true;
-}
-
-bool parse_uint8(const char* str, uint8_t* value)
-{
-    uint16_t value16;
-    if (!parse_uint16(str, &value16)) { return false; }
-    if (value16 > 255) {
-        s_inter.error(F("bad_arg"), F("Value out of range: "), value16);
-        return false;
-    }
-    *value = uint8_t(value16);
-    return true;
-}
-
-bool parse_float(const char* str, float* value)
-{
-    uint8_t len = strlen(str);
-    char* endptr;
-    *value = strtod(str, &endptr);
-    uint8_t num_read = endptr - str;
-
-    if (num_read == 0 || num_read != len) {
-        s_inter.error(F("bad_arg"), F("Expected float value, got "), str);
-        return false;
-    } else if (!isfinite(*value)) {
-        s_inter.error(F("bad_arg"), F("Value out of range: "), *value);
-        return false;
-    }
-    return true;
-}
-
 bool get_is_volts(const char* str, bool* is_volts) {
     if (strcasecmp(str, "volts") == 0) {
         *is_volts = true;
@@ -164,7 +98,7 @@ bool get_is_volts(const char* str, bool* is_volts) {
         *is_volts = false;
         return true;
     } else {
-        s_inter.error(F("bad_arg"), F("Expected code or volts, got "), str);
+        sinter_error(F("bad_arg"), F("Expected code or volts, got "), str);
         return false;
     }
 }
@@ -172,7 +106,7 @@ bool get_is_volts(const char* str, bool* is_volts) {
 bool get_selected_dac(const char* str, int8_t* selected_dac) {
     if (strcasecmp(str, "all") == 0) {
         *selected_dac = LTC2668_ALL_DACS;
-    } else if (!parse_uint8(str, selected_dac)) {
+    } else if (!parse_u8(str, selected_dac)) {
         Serial.println(str);
         return false;
     }
@@ -194,13 +128,13 @@ bool get_write_inputs(char* const argv[], int8_t* dac, uint16_t* code)
     
     if (is_volts) {
         float input_volts;
-        if (!parse_float(argv[2], &input_volts)) {
+        if (!parse_f32(argv[2], &input_volts)) {
             return false;
         }
         result = ltc2668_volts_to_code(&ltc2668_state, *dac, input_volts, code);
         if (!check_result(result)) { return false; }
     } else {
-        if (!parse_uint16(argv[2], code)) {
+        if (!parse_u16(argv[2], code)) {
             return false;
         }
     }
@@ -210,18 +144,18 @@ bool check_result(int8_t result) {
     if (result == LTC2668_ERR_OK) {
         return true;
     } else if (result == LTC2668_ERR_MISMATCH) {
-        s_inter.error(F("device_error"), F("Mismatch during readback of previous value"));
+        sinter_error(F("device_error"), F("Mismatch during readback of previous value"));
         return false;
     } else if (result == LTC2668_ERR_NOT_SAME_SPAN) {
-        s_inter.error(
+        sinter_error(
             F("invalid_operation"),
             F("can't set all DACs to same volts with different spans"));
         return false;
     } else if (result == LTC2668_ERR_BAD_SPAN) {
-        s_inter.error(F("logic_error"), F("bad span"));
+        sinter_error(F("logic_error"), F("bad span"));
         return false;
     } else {
-        s_inter.error(F("logic_error"), F("An unexpected error occured"));
+        sinter_error(F("logic_error"), F("An unexpected error occured"));
         return false;
     }
 }
@@ -268,7 +202,7 @@ bool build_mask(const char* str, uint16_t* mask) {
     for (int i = 0; ; ++i) {
         if (str[i] == ',' || str[i] == '\0') {
             if (index > 15) {
-                s_inter.error(F("bad_arg"), F("got bad channel for toggle bits"));
+                sinter_error(F("bad_arg"), F("got bad channel for toggle bits"));
                 return false;
             }
             if (started) {
@@ -281,7 +215,7 @@ bool build_mask(const char* str, uint16_t* mask) {
                 return true;
             }
         } else if ((str[i] < '0') || (str[i] > '9')) {
-            s_inter.error(F("bad_arg"), F("got bad channel for toggle bits"));
+            sinter_error(F("bad_arg"), F("got bad channel for toggle bits"));
                 return false;
         } else {
             started = true;
@@ -302,13 +236,13 @@ void set_reference(int argc, char* const argv[])
     } else if (strcasecmp(argv[0], "external") == 0) {
         is_internal = false;
     } else {
-        s_inter.error(F("bad_arg"), F("Expected internal or external, got "), argv[0]);
+        sinter_error(F("bad_arg"), F("Expected internal or external, got "), argv[0]);
         return;
     }
     
     int8_t result = ltc2668_set_reference_mode(&ltc2668_state, is_internal);
     if (check_result(result)) {
-        s_inter.println(F("reference set to "), argv[0]);
+        sinter_println(F("reference set to "), argv[0]);
     }
 }
 
@@ -346,11 +280,11 @@ void update_power_up(int argc, char* const argv[])
     }
     
     int8_t result = ltc2668_update_power_up_dac(&ltc2668_state, selected_dac);
-    if (check_result) {
+    if (check_result(result)) {
         if (selected_dac == LTC2668_ALL_DACS) {
-            s_inter.println(F("All DACs updated and powered up"));
+            sinter_println(F("All DACs updated and powered up"));
         } else {
-            s_inter.println(F("DAC "), selected_dac, F(" updated and powered up"));
+            sinter_println(F("DAC "), selected_dac, F(" updated and powered up"));
         }
     }
 }
@@ -363,11 +297,11 @@ void power_down(int argc, char* const argv[])
     }
     
     int8_t result = ltc2668_power_down_dac(&ltc2668_state, selected_dac);
-    if (check_result) {
+    if (check_result(result)) {
         if (selected_dac == LTC2668_ALL_DACS) {
-            s_inter.println(F("All DACs powered down"));
+            sinter_println(F("All DACs powered down"));
         } else {
-            s_inter.println(F("DAC "), selected_dac, F(" powered down"));
+            sinter_println(F("DAC "), selected_dac, F(" powered down"));
         }
     }
 }
@@ -391,20 +325,20 @@ void set_span(int argc, char* const argv[])
     } else if (strcmp(argv[1], "+-2.5") == 0) {
         span = LTC2668_SPAN_PLUS_MINUS_2V5;
     } else {
-        s_inter.error(
+        sinter_error(
             F("bad_arg"),
             F("expected one of 5, 10, +-5, +-10 or +-2.5 got "),
             argv[1]);
     }
     
     int8_t result = ltc2668_set_softspan(&ltc2668_state, selected_dac, span);
-    if (check_result) {
+    if (check_result(result)) {
         if (selected_dac == LTC2668_ALL_DACS) {
-            s_inter.println(
+            sinter_println(
                 F("All DACs span set to "),
                 argv[1]);
         } else {
-            s_inter.println(
+            sinter_println(
                 F("DAC "),
                 selected_dac,
                 F(" span set to "),
@@ -416,7 +350,7 @@ void set_span(int argc, char* const argv[])
 void toggle_select(int argc, char* const argv[]) 
 {
     if (argc == 3) {
-        s_inter.error(F("bad_arg"), F("Expected 2 or 4 args, got 3"));
+        sinter_error(F("bad_arg"), F("Expected 2 or 4 args, got 3"));
         return;
     }
     
@@ -427,7 +361,7 @@ void toggle_select(int argc, char* const argv[])
     } else if (strcasecmp(argv[0], "clear") == 0) {
         unset_arg = argv[1];
     } else {
-        s_inter.error(F("bad_arg"), F("Expected 'set' or 'clear', got "), argv[0]);
+        sinter_error(F("bad_arg"), F("Expected 'set' or 'clear', got "), argv[0]);
         return;
     }
     
@@ -437,7 +371,7 @@ void toggle_select(int argc, char* const argv[])
         } else if (strcasecmp(argv[2], "clear") == 0) {
             unset_arg = argv[3];
         } else {
-             s_inter.error(F("bad_arg"), F("Expected 'set' or 'clear', got "), argv[2]);
+            sinter_error(F("bad_arg"), F("Expected 'set' or 'clear', got "), argv[2]);
         } 
     }
     
@@ -459,7 +393,7 @@ void toggle_select(int argc, char* const argv[])
     select_bits &= ~unset_mask;
     
     int8_t result = ltc2668_toggle_select(&ltc2668_state, select_bits);
-    if (check_result) {
+    if (check_result(result)) {
         Serial.print("Select bits set to ");
         Serial.print(select_bits, HEX);
         Serial.println(" (hex)");
@@ -479,16 +413,16 @@ void set_mux(int argc, char* const argv[]) {
     }
     
     if (selected_dac == LTC2668_ALL_DACS) {
-        s_inter.error(F("bad_arg"), F("Mux only works on a single channel"));
+        sinter_error(F("bad_arg"), F("Mux only works on a single channel"));
         return;
     }
     
     int8_t result = ltc2668_set_mux(&ltc2668_state, enable, selected_dac);
-    if (check_result) {
+    if (check_result(result)) {
         if (enable) {
-            s_inter.println(F("Monitor MUX enabled for channel "), ltc2668_state.mux_selected_dac);
+            sinter_println(F("Monitor MUX enabled for channel "), ltc2668_state.mux_selected_dac);
         } else {
-            s_inter.println(F("Monitor MUX disabled"));
+            sinter_println(F("Monitor MUX disabled"));
         }
     }
 }
@@ -502,7 +436,7 @@ void set_global_toggle(int argc, char* const argv[]) {
     } else if (strcasecmp(argv[0], "toggle") == 0) {
         is_high ^= ltc2668_state.global_toggle;
     } else {
-        s_inter.error(
+        sinter_error(
             F("bad_arg"),
             F("expected one of high, low, or toggle got "),
             argv[0]);
@@ -510,14 +444,14 @@ void set_global_toggle(int argc, char* const argv[]) {
     
     int8_t result = ltc2668_set_global_toggle(&ltc2668_state, is_high);
     if (check_result(result)) {
-        s_inter.println(F("Set global toggle to "), is_high ? F("high") : F("low"));
+        sinter_println(F("Set global toggle to "), is_high ? F("high") : F("low"));
     }
 }
 
 void ramp(int argc, char* const argv[]) {
     int8_t result = ltc2668_ramp(&ltc2668_state);
     if (check_result(result)) {
-        s_inter.println(F("Set a ramp of codes accross all channels"));
+        sinter_println(F("Set a ramp of codes accross all channels"));
     }
 }
 

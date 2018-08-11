@@ -43,6 +43,168 @@ ongoing work.
 
 #include "SortedDictionary.hpp"
 
+static void print_error_code(const __FlashStringHelper* code)
+{
+    Serial.print(F("error ["));
+    Serial.print(code);
+    Serial.print(F("]: "));
+}
+
+//! Print a line to Serial
+template <class T>
+void sinter_println(
+    T item) //!< item to print, can be F("literal") const char* or number
+{
+    Serial.println(item);
+}
+
+//! Print 2 things to Serial as a line
+template <class T, class U>
+void sinter_println(
+    T item_1, //!< 1st item to print, can be F("literal") const char* or number
+    U item_2) //!< 2nd item to print, can be F("literal") const char* or number
+{
+    Serial.print(item_1);
+    Serial.println(item_2);
+}
+
+//! Print 3 things to Serial as a line
+template <class T, class U, class V>
+void sinter_println(
+    T item_1, //!< 1st item to print, can be F("literal") const char* or number
+    U item_2, //!< 2nd item to print, can be F("literal") const char* or number
+    V item_3) //!< 3rd item to print, can be F("literal") const char* or number
+{
+    Serial.print(item_1);
+    Serial.print(item_2);
+    Serial.println(item_3);
+}
+
+//! Print 4 things to Serial as a line
+template <class T, class U, class V, class W>
+void sinter_println(
+    T item_1, //!< 1st item to print, can be F("literal") const char* or number
+    U item_2, //!< 2nd item to print, can be F("literal") const char* or number
+    V item_3, //!< 3rd item to print, can be F("literal") const char* or number
+    W item_4) //!< 4th item to print, can be F("literal") const char* or number
+{
+    Serial.print(item_1);
+    Serial.print(item_2);
+    Serial.print(item_3);
+    Serial.println(item_4);
+}
+
+//! Print 5 things to Serial as a line
+template <class T, class U, class V, class W, class X>
+void sinter_println(
+    T item_1, //!< 1st item to print, can be F("literal") const char* or number
+    U item_2, //!< 2nd item to print, can be F("literal") const char* or number
+    V item_3, //!< 3rd item to print, can be F("literal") const char* or number
+    W item_4, //!< 4th item to print, can be F("literal") const char* or number
+    X item_5) //!< 5th item to print, can be F("literal") const char* or number
+{
+    Serial.print(item_1);
+    Serial.print(item_2);
+    Serial.print(item_3);
+    Serial.print(item_4);
+    Serial.println(item_5);
+}
+
+//! Print 6 things to Serial as a line
+template <class T, class U, class V, class W, class X, class Y>
+void sinter_println(
+    T item_1, //!< 1st item to print, can be F("literal") const char* or number
+    U item_2, //!< 2nd item to print, can be F("literal") const char* or number
+    V item_3, //!< 3rd item to print, can be F("literal") const char* or number
+    W item_4, //!< 4th item to print, can be F("literal") const char* or number
+    X item_5, //!< 5th item to print, can be F("literal") const char* or number
+    Y item_6) //!< 5th item to print, can be F("literal") const char* or number
+{
+    Serial.print(item_1);
+    Serial.print(item_2);
+    Serial.print(item_3);
+    Serial.print(item_4);
+    Serial.print(item_5);
+    Serial.println(item_6);
+}
+
+//! print an error message with a code and a standard format
+template <class T>
+void sinter_error(
+    const __FlashStringHelper* code, //!< Error code
+    T message                        //!< Error message
+    ) 
+{
+    print_error_code(code);
+    Serial.println(message);
+}
+
+//! print an error message with a code and a standard format
+template <class T, class U>
+void sinter_error(
+    const __FlashStringHelper* code, //!< Error code
+    T item_1,                        //!< Error message item 1
+    U item_2)                        //!< Error message item 2
+{
+    print_error_code(code);
+    sinter_println(item_1, item_2);
+}
+
+//! print an error message with a code and a standard format
+template <class T, class U, class V>
+void sinter_error(
+    const __FlashStringHelper* code, //!< Error code
+    T item_1,                        //!< Error message item 1
+    U item_2,                        //!< Error message item 2
+    V item_3)                        //!< Error message item 3
+{
+    print_error_code(code);
+    sinter_println(item_1, item_2, item_3);
+}
+
+//! print an error message with a code and a standard format
+template <class T, class U, class V, class W>
+void sinter_error(
+    const __FlashStringHelper* code, //!< Error code
+    T item_1,                        //!< Error message item 1
+    U item_2,                        //!< Error message item 2
+    V item_3,                        //!< Error message item 3
+    W item_4)                        //!< Error message item 4
+{
+    print_error_code(code);
+    sinter_println(item_1, item_2, item_3, item_4);
+}
+
+//! print an error message with a code and a standard format
+template <class T, class U, class V, class W, class X>
+void sinter_error(
+    const __FlashStringHelper* code, //!< Error code
+    T item_1,                        //!< Error message item 1
+    U item_2,                        //!< Error message item 2
+    V item_3,                        //!< Error message item 3
+    W item_4,                        //!< Error message item 4
+    X item_5)                        //!< Error message item 5
+{
+    print_error_code(code);
+    sinter_println(item_1, item_2, item_3, item_4, item_5);
+}
+
+//! print an error message with a code and a standard format
+template <class T, class U, class V, class W, class X, class Y>
+void sinter_error(
+    const __FlashStringHelper* code, //!< Error code
+    T item_1,                        //!< Error message item 1
+    U item_2,                        //!< Error message item 2
+    V item_3,                        //!< Error message item 3
+    W item_4,                        //!< Error message item 4
+    X item_5,                        //!< Error message item 5
+    Y item_6)                        //!< Error message item 6
+{
+    print_error_code(code);
+    sinter_println(item_1, item_2, item_3, item_4, item_5, item_6);
+}
+
+
 class StringComparer {
 public:
     static int compare(const char* a, const char* b) {
@@ -100,14 +262,14 @@ class SerialInterface
             int result = read_char(timeout);
             timeout = 2000;
             if (result < 0) {
-                error(F("timeout"), F("timed out waiting for newline"));
+                sinter_error(F("timeout"), F("timed out waiting for newline"));
                 return -1;
             }
             char c = result;
             if (c == '\n') {
                 command_buff[i] = '\0';
                 if (too_long) {
-                    error(F("too_long"), F("command too long"));
+                    sinter_error(F("too_long"), F("command too long"));
                     return -1;
                 } else {
                     return arg_index;   
@@ -130,15 +292,12 @@ class SerialInterface
     
     void print_entry(const char* name, const __FlashStringHelper* desc)
     {
-        Serial.print("* ");
-        Serial.print(name);
-        Serial.print(" ");
-        Serial.println(desc);
+        sinter_println(F("* "), name, F(" "), desc);
     }
     
     void help()
     {
-        Serial.println("Commands:");
+        Serial.println(F("Commands:"));
         print_entry("help", F("[COMMAND] - Print help for COMMAND or all commands"));
         print_entry("id", F("- show part name and eval board name"));
         const Command* commands = command_dict.get_values();
@@ -170,16 +329,7 @@ class SerialInterface
     
     void id()
     {
-        Serial.print(part_name);
-        Serial.print(F(","));
-        Serial.println(board_name);
-    }
-    
-    void print_error_code(const __FlashStringHelper* code)
-    {
-        Serial.print(F("error ["));
-        Serial.print(code);
-        Serial.print(F("]: "));
+        sinter_println(part_name, F(","), board_name);
     }
 
 public:
@@ -196,10 +346,7 @@ public:
     //! Prints a standard greeting to the serial terminal.
     void greet()
     {
-        Serial.print(part_name);
-        Serial.print(F(","));
-        Serial.print(board_name);
-        Serial.println(F(" enter 'help' for commands"));
+        sinter_println(part_name, F(","), board_name, F(" enter 'help' for commands"));
     }
 
     //! Adds a command to the list of known commands
@@ -212,7 +359,7 @@ public:
         )
     {    
         if (command_dict.get_num_entries() >= NCommands) {
-            error(F("logic_error"), F("Tried to add too many commands (increase NCommands)"));
+            sinter_error(F("logic_error"), F("Tried to add too many commands (increase NCommands)"));
         }
         
         if (max_args == -1) { max_args = min_args; }
@@ -224,7 +371,7 @@ public:
         command.min_args = min_args;
         command.max_args = max_args;
         if (!command_dict.insert(name, command)) {
-            error(F("logic_error"), F("Command '"), name, F("' already added"));
+            sinter_error(F("logic_error"), F("Command '"), name, F("' already added"));
         }
     }
 
@@ -250,12 +397,12 @@ public:
 
         Command command;
         if (!command_dict.get_value(command_buff, command)) {
-            error(F("bad_command"), F("command '"), command_buff, "' not found");
+            sinter_error(F("bad_command"), F("command '"), command_buff, "' not found");
             return;
         }
 
         if (num_args < command.min_args) {
-            error(
+            sinter_error(
                 F("not_enough_args"),
                 F("not enough args for command '"),
                 command_buff,
@@ -265,7 +412,7 @@ public:
                 num_args);
             return;
         } else if (num_args > command.max_args) {
-            error(
+            sinter_error(
                 F("too_many_args"),
                 F("too many args for command '"),
                 command_buff,
@@ -277,160 +424,6 @@ public:
         }
 
         command.callback(num_args, &arg_buff[0]);
-    }
-    
-    //! Print a line to Serial
-    template <class T>
-    void println(
-        T item) //!< item to print, can be F("literal") const char* or number
-    {
-        Serial.println(item);
-    }
-    
-    //! Print 2 things to Serial as a line
-    template <class T, class U>
-    void println(
-        T item_1, //!< 1st item to print, can be F("literal") const char* or number
-        U item_2) //!< 2nd item to print, can be F("literal") const char* or number
-    {
-        Serial.print(item_1);
-        Serial.println(item_2);
-    }
-    
-    //! Print 3 things to Serial as a line
-    template <class T, class U, class V>
-    void println(
-        T item_1, //!< 1st item to print, can be F("literal") const char* or number
-        U item_2, //!< 2nd item to print, can be F("literal") const char* or number
-        V item_3) //!< 3rd item to print, can be F("literal") const char* or number
-    {
-        Serial.print(item_1);
-        Serial.print(item_2);
-        Serial.println(item_3);
-    }
-    
-    //! Print 4 things to Serial as a line
-    template <class T, class U, class V, class W>
-    void println(
-        T item_1, //!< 1st item to print, can be F("literal") const char* or number
-        U item_2, //!< 2nd item to print, can be F("literal") const char* or number
-        V item_3, //!< 3rd item to print, can be F("literal") const char* or number
-        W item_4) //!< 4th item to print, can be F("literal") const char* or number
-    {
-        Serial.print(item_1);
-        Serial.print(item_2);
-        Serial.print(item_3);
-        Serial.println(item_4);
-    }
-    
-    //! Print 5 things to Serial as a line
-    template <class T, class U, class V, class W, class X>
-    void println(
-        T item_1, //!< 1st item to print, can be F("literal") const char* or number
-        U item_2, //!< 2nd item to print, can be F("literal") const char* or number
-        V item_3, //!< 3rd item to print, can be F("literal") const char* or number
-        W item_4, //!< 4th item to print, can be F("literal") const char* or number
-        X item_5) //!< 5th item to print, can be F("literal") const char* or number
-    {
-        Serial.print(item_1);
-        Serial.print(item_2);
-        Serial.print(item_3);
-        Serial.print(item_4);
-        Serial.println(item_5);
-    }
-    
-    //! Print 6 things to Serial as a line
-    template <class T, class U, class V, class W, class X, class Y>
-    void println(
-        T item_1, //!< 1st item to print, can be F("literal") const char* or number
-        U item_2, //!< 2nd item to print, can be F("literal") const char* or number
-        V item_3, //!< 3rd item to print, can be F("literal") const char* or number
-        W item_4, //!< 4th item to print, can be F("literal") const char* or number
-        X item_5, //!< 5th item to print, can be F("literal") const char* or number
-        Y item_6) //!< 5th item to print, can be F("literal") const char* or number
-    {
-        Serial.print(item_1);
-        Serial.print(item_2);
-        Serial.print(item_3);
-        Serial.print(item_4);
-        Serial.print(item_5);
-        Serial.println(item_6);
-    }
-    
-    //! print an error message with a code and a standard format
-    template <class T>
-    void error(
-        const __FlashStringHelper* code, //!< Error code
-        T message                        //!< Error message
-        ) 
-    {
-        print_error_code(code);
-        println(message);
-    }
-    
-    //! print an error message with a code and a standard format
-    template <class T, class U>
-    void error(
-        const __FlashStringHelper* code, //!< Error code
-        T item_1,                        //!< Error message item 1
-        U item_2)                        //!< Error message item 2
-    {
-        print_error_code(code);
-        println(item_1, item_2);
-    }
-    
-    //! print an error message with a code and a standard format
-    template <class T, class U, class V>
-    void error(
-        const __FlashStringHelper* code, //!< Error code
-        T item_1,                        //!< Error message item 1
-        U item_2,                        //!< Error message item 2
-        V item_3)                        //!< Error message item 3
-    {
-        print_error_code(code);
-        println(item_1, item_2, item_3);
-    }
-    
-    //! print an error message with a code and a standard format
-    template <class T, class U, class V, class W>
-    void error(
-        const __FlashStringHelper* code, //!< Error code
-        T item_1,                        //!< Error message item 1
-        U item_2,                        //!< Error message item 2
-        V item_3,                        //!< Error message item 3
-        W item_4)                        //!< Error message item 4
-    {
-        print_error_code(code);
-        println(item_1, item_2, item_3, item_4);
-    }
-    
-    //! print an error message with a code and a standard format
-    template <class T, class U, class V, class W, class X>
-    void error(
-        const __FlashStringHelper* code, //!< Error code
-        T item_1,                        //!< Error message item 1
-        U item_2,                        //!< Error message item 2
-        V item_3,                        //!< Error message item 3
-        W item_4,                        //!< Error message item 4
-        X item_5)                        //!< Error message item 5
-    {
-        print_error_code(code);
-        println(item_1, item_2, item_3, item_4, item_5);
-    }
-    
-    //! print an error message with a code and a standard format
-    template <class T, class U, class V, class W, class X, class Y>
-    void error(
-        const __FlashStringHelper* code, //!< Error code
-        T item_1,                        //!< Error message item 1
-        U item_2,                        //!< Error message item 2
-        V item_3,                        //!< Error message item 3
-        W item_4,                        //!< Error message item 4
-        X item_5,                        //!< Error message item 5
-        Y item_6)                        //!< Error message item 6
-    {
-        print_error_code(code);
-        println(item_1, item_2, item_3, item_4, item_5, item_6);
     }
 }; 
 
