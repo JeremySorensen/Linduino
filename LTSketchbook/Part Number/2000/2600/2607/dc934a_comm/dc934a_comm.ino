@@ -77,16 +77,11 @@ ongoing work.
 
 #include <Arduino.h>
 #include <stdint.h>
-//#include "Linduino.h"
-#include "LT_I2C.h"
-//#include "LT_SPI.h"
-#include "ltc2607_comm.h"
-//#include "LTC2422.h"
-//#include "QuikEval_EEPROM.h"
 #include <Wire.h>
 #include <SPI.h>
 #include "SerialInterface.hpp"
 #include "ParseNum.h"
+#include "dc934a_comm.h"
 
 // Globals
 //////////
@@ -96,11 +91,11 @@ ongoing work.
 // number of serial commands
 // number of characters in longest command including args (and spaces between)
 // max number of args a command can take
-SerialInterface<5, 64, 3> s_inter("LTC2607", "DC934A");
+SerialInterface<8, 64, 3> s_inter("LTC2607", "DC934A");
 
 // Keep track of state between commands
 Ltc2607State ltc2607_state;
-//Ltc2422State ltc2422_state;
+Ltc2422State ltc2422_state;
 
 // Helper functions
 ///////////////////
@@ -215,6 +210,16 @@ bool get_is_volts(const char* str, bool* is_volts) {
     }
 }
 
+int8_t set_ref(const char* ref_str, float* ref_volts)
+{
+    int8_t result = parse_f32(ref_str, ref_volts);
+    if (result != 0) {
+        return;
+    }
+    
+    ltc2422_set_reference(&ltc2422_state, *ref_volts);
+}
+
 // Command callbacks
 ////////////////////
 
@@ -283,6 +288,66 @@ void power_down_dac(int argc, char* const argv[])
     } 
 }
 
+void set_adc_reference(int argc, char* const argv[])
+{
+    float ref_volts;
+    int8_t result = set_ref(argv[0], &ref_volts);
+    if (result != 0) {
+        return;
+    }
+    
+    sinter_println("reference set to ", ref_volts, "V");
+}
+
+void read_adcs(int argc, char* const argv[])
+{
+    int32_t code_a, code_b;
+    int8_t result = ltc2422_adc_read(&ltc2422_state, &code_a, &code_b);
+    
+    float volts_a = ltc2422_code_to_volts(&ltc2422_state, code_a);
+    float volts_b = ltc2422_code_to_volts(&ltc2422_state, code_b);
+    
+    Serial.print("A: ");
+    Serial.print(code_a);
+    Serial.print(", ");
+    Serial.print(volts_a);
+    Serial.print("V. B: ");
+    Serial.print(code_b);
+    Serial.print(", ");
+    Serial.print(volts_b);
+    Serial.println("V.");
+}
+
+void calibrate(int argc, char* const argv[])
+{
+    int8_t result;
+    if (argc == 2) {
+        if (strcasecmp(argv[0], "ref") == 0) {
+            float ref_volts;
+            result = set_ref(argv[1], &ref_volts);
+            if (result != 0) {
+                return;
+            }
+        } else {
+            sinter_error(F("bad_arg"), F("expected 'ref' got "), argv[0]);
+            return;
+        }
+    } else if (argc == 1) {
+        sinter_error(F("bad_arg_count"), F("expected 0 or 2 args, got 1"));
+        return;
+    }        
+    
+    dc934a_calibration(&ltc2607_state, &ltc2422_state);
+    Serial.print("A: lsb = ");
+    Serial.print(ltc2607_state.dac_a_lsb);
+    Serial.print(", offset = ");
+    Serial.print(ltc2607_state.dac_a_offset);
+    Serial.print(", B: lsb = ");
+    Serial.print(ltc2607_state.dac_b_lsb);
+    Serial.print(", offset = ");
+    Serial.println(ltc2607_state.dac_b_offset);
+}
+
 void setup() {
        
     Serial.begin(115200);
@@ -327,6 +392,24 @@ void setup() {
           "    CH is one of 'a', 'b', or 'both'"),
         power_down_dac,
         1);
+        
+    s_inter.add_command(
+        "set_adc_ref",
+        F("REF_VOLTS - Set the reference voltage to REF_VOLTS"),
+        set_adc_reference,
+        1);
+        
+    s_inter.add_command(
+        "read",
+        F("- Read both ADC channels"),
+        read_adcs);
+        
+    s_inter.add_command(
+        "calibrate",
+        F("[ref REF_VOLTS] - Calibrate the DACs optionally specifying the ADC reference"),
+        calibrate,
+        0,
+        2);
     
     s_inter.greet();
 }

@@ -108,10 +108,10 @@ ongoing work.
 #define LTC2607_ERR_NOT_SAME_CAL -2 //!< Tried to do an operation that requires oth DACs to have same cal (invalid operation)
 
 typedef struct Ltc2607StateTag {
-    float channel_a_lsb;
-    float channel_b_lsb;
-    float channel_a_offset;
-    float channel_b_offset;
+    float dac_a_lsb;
+    float dac_b_lsb;
+    float dac_a_offset;
+    float dac_b_offset;
     bool same_cal;
     uint8_t address;  
 } Ltc2607State;

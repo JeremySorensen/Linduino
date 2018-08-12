@@ -111,11 +111,11 @@ int8_t ltc2607_volts_to_code(Ltc2607State* state, int8_t selected_dac, float vol
     }
     
     if (is_channel_a) {
-        lsb = state->channel_a_lsb;
-        offset = state->channel_a_offset;
+        lsb = state->dac_a_lsb;
+        offset = state->dac_a_offset;
     } else {
-        lsb = state->channel_b_lsb;
-        offset = state->channel_b_offset;
+        lsb = state->dac_b_lsb;
+        offset = state->dac_b_offset;
     }
     
     float float_code = floor((volts - offset) / lsb);
@@ -146,11 +146,11 @@ int8_t ltc2607_code_to_volts(Ltc2607State* state, int8_t selected_dac, uint16_t 
     }
         
     if (is_channel_a) {
-        lsb = state->channel_a_lsb;
-        offset = state->channel_a_offset;
+        lsb = state->dac_a_lsb;
+        offset = state->dac_a_offset;
     } else {
-        lsb = state->channel_b_lsb;
-        offset = state->channel_b_offset;
+        lsb = state->dac_b_lsb;
+        offset = state->dac_b_offset;
     }
     *volts = lsb * code + offset;
     return LTC2607_ERR_OK;
@@ -195,11 +195,11 @@ int8_t ltc2607_power_down_dac(const Ltc2607State* state, int8_t selected_dac)
   
 int8_t ltc2607_clear_calibration(Ltc2607State* state)
 {
-    state->channel_a_lsb = LTC2607_TYPICAL_lsb;
-    state->channel_a_offset = LTC2607_TYPICAL_OFFSET;
+    state->dac_a_lsb = LTC2607_TYPICAL_lsb;
+    state->dac_a_offset = LTC2607_TYPICAL_OFFSET;
 
-    state->channel_b_lsb = LTC2607_TYPICAL_lsb;
-    state->channel_b_offset = LTC2607_TYPICAL_OFFSET;
+    state->dac_b_lsb = LTC2607_TYPICAL_lsb;
+    state->dac_b_offset = LTC2607_TYPICAL_OFFSET;
     
     state->same_cal = true;
     
