@@ -53,10 +53,11 @@ ongoing work.
 #include <Arduino.h>
 #include "Linduino.h"
 #include "LT_SPI.h"
+#include "LT_I2C.h"
 #include "ltc2668_comm.h"
 #include <SPI.h>
 
-#define FAKE
+//#define FAKE
 
 void ltc2668_init(Ltc2668State* state)
 {
@@ -67,6 +68,10 @@ void ltc2668_init(Ltc2668State* state)
     state->select_bits = 0;
     state->all_same_span = 1;
     state->global_toggle = 0;
+    
+    quikeval_SPI_init();          // Configure the spi port for 4MHz SCK
+    quikeval_SPI_connect();       // Connect SPI to main data port
+    quikeval_I2C_init();          // Configure the EEPROM I2C port for 100kHz
     
     // First turn everything off, set span, and set to 0 and enable
     // ignore any errors for now
@@ -94,17 +99,19 @@ static int8_t ltc2668_write(Ltc2668State* state, uint8_t dac_command, uint8_t da
     uint8_t data[LTC2668_COMMAND_WORD_SIZE];
     uint8_t rx[LTC2668_COMMAND_WORD_SIZE];
   
-    data[0] = dac_code & 0xFF;
-    data[1] = (dac_code >> 8) & 0xFF;
-    data[2] = dac_command | dac_address;
-    data[3] = 0;
+    data[0] = 0;
+    data[1] = dac_command | dac_address;
+    data[2] = (dac_code >> 8) & 0xFF;
+    data[3] = dac_code & 0xFF;
+
 
 #ifdef FAKE
     for (int i = 0; i < LTC2668_COMMAND_WORD_SIZE; ++i) {
         rx[i] = state->previous_data[i];
     }
 #else
-    spi_transfer_block(QUIKEVEL_CS, data, rx, LTC2668_COMMAND_WORD_SIZE);
+    quikeval_SPI_connect();
+    spi_transfer_block(QUIKEVAL_CS, data, rx, LTC2668_COMMAND_WORD_SIZE);
 #endif
   
   return ltc2668_check_and_copy_transaction(state, rx);
