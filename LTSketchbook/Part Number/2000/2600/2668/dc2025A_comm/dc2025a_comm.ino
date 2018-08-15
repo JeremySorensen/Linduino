@@ -394,9 +394,19 @@ void toggle_select(int argc, char* const argv[])
     
     int8_t result = ltc2668_toggle_select(&ltc2668_state, select_bits);
     if (check_result(result)) {
-        Serial.print("Select bits set to ");
-        Serial.print(select_bits, HEX);
-        Serial.println(" (hex)");
+        Serial.print("These select bits are set: ");
+        for (int i = 0; select_bits != 0; ++i) {
+            bool print = (select_bits & 1) != 0;
+            select_bits >>= 1;
+            if (print) {
+                Serial.print(i);
+                if (select_bits != 0) {
+                    Serial.print(", ");
+                } else {
+                    Serial.println("");
+                }
+            }
+        }
     }
     ltc2668_state.select_bits = select_bits;
 }
@@ -463,7 +473,8 @@ void setup() {
 
     s_inter.add_command(
        "reference",
-       F("internal | external - Set the reference to be internal or external"),
+       F("internal | external - Set the reference to be internal or external\n"
+         "    Example: reference internal"),
        set_reference, 
        1);
     
@@ -488,14 +499,16 @@ void setup() {
     s_inter.add_command(
         "update",
         F("CH - Update and power up DAC channel(s).\n"
-          "    CH is 0-16, or 'all'"),
+          "    CH is 0-16, or 'all'\n"
+          "    Example: update 0"),
         update_power_up,
         1);
 
     s_inter.add_command(
         "power_down",
         F("CH - Power down DAC channel(s).\n"
-          "    CH is 0-16, or 'all'"),
+          "    CH is 0-16, or 'all'\n"
+          "    Example: power_down 3"),
         power_down,
         1);
         
@@ -503,7 +516,8 @@ void setup() {
         "span",
         F("CH SPAN - Set the span for the channel(s).\n"
           "    CH is 0-15 or 'all'\n"
-          "    SPAN is 5, 10, +-5, +-10, or +-2.5"),
+          "    SPAN is 5, 10, +-5, +-10, or +-2.5\n"
+          "    Example: span all 10"),
         set_span,
         2);
         
@@ -512,23 +526,26 @@ void setup() {
         F("[set SET_BITS] [clear CLEAR_BITS] - Set and unset channel select bits\n"
           "    SET_BITS is comma separated list of bit indices to set\n"
           "    CLEAR_BITS is comma separated list of bit indices to clear\n"
-          "    Example: select_bits set 1,3,7 clear 2,6\n"
-          "    must have at least one of set and clear"),
+          "    must have 'set SET_BITS' or 'clear CLEAR_BITS' or both\n"
+          "    Example: select_bits set 1,3,7 clear 2,6"),
         toggle_select,
         2,
         4);
         
     s_inter.add_command(
         "mux",
-        F("CH | enable | disable - Set mux to monitor a channel or disable it.\n"
+        F("(CH | enable | disable) - Set mux to monitor a channel or disable it.\n"
           "    CH is 0-15\n"
-          "    if 'enable' is passed previously enabled channel is reenabled"),
+          "    if 'enable' is passed previously enabled channel is reenabled\n"
+          "    Example: mux 1\n"
+          "    Example: mux enable\n"
+          "    Example: mux disable\n"),
         set_mux,
         1);
           
     s_inter.add_command(
         "global_toggle",
-        F("high | low - Set global toggle bit high or low"),
+        F("(high | low) - Set global toggle bit high or low"),
         set_global_toggle,
         1);
         
