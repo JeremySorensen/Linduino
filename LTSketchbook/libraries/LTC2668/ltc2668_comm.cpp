@@ -81,14 +81,14 @@ void ltc2668_init(Ltc2668State* state)
     ltc2668_write_and_update_dac(state, LTC2668_ALL_DACS, 0);
 }
 
-static int8_t ltc2668_check_and_copy_transaction(Ltc2668State* state, uint8_t rx[])
+static int8_t ltc2668_check_and_copy_transaction(Ltc2668State* state, uint8_t data[], uint8_t rx[])
 {
     int8_t result = LTC2668_ERR_OK;
     for (int i = 0; i < LTC2668_COMMAND_WORD_SIZE; ++i) {
         if (state->previous_data[i] != rx[i]) {
             result = LTC2668_ERR_MISMATCH;
         }
-        state->previous_data[i] = rx[i];
+        state->previous_data[i] = data[i];
     }
     return result;
 }
@@ -99,11 +99,10 @@ static int8_t ltc2668_write(Ltc2668State* state, uint8_t dac_command, uint8_t da
     uint8_t data[LTC2668_COMMAND_WORD_SIZE];
     uint8_t rx[LTC2668_COMMAND_WORD_SIZE];
   
-    data[0] = 0;
-    data[1] = dac_command | dac_address;
-    data[2] = (dac_code >> 8) & 0xFF;
-    data[3] = dac_code & 0xFF;
-
+    data[3] = 0;
+    data[2] = dac_command | dac_address;
+    data[1] = (dac_code >> 8) & 0xFF;
+    data[0] = dac_code & 0xFF;
 
 #ifdef FAKE
     for (int i = 0; i < LTC2668_COMMAND_WORD_SIZE; ++i) {
@@ -114,7 +113,7 @@ static int8_t ltc2668_write(Ltc2668State* state, uint8_t dac_command, uint8_t da
     spi_transfer_block(QUIKEVAL_CS, data, rx, LTC2668_COMMAND_WORD_SIZE);
 #endif
   
-  return ltc2668_check_and_copy_transaction(state, rx);
+  return ltc2668_check_and_copy_transaction(state, data, rx);
 }
 
 static int8_t ltc2668_span_to_min_max(Ltc2668State* state, int8_t selected_dac, float* min, float* max)
@@ -210,50 +209,63 @@ int8_t ltc2668_write_dac_input_register(
     int8_t selected_dac,
     uint16_t code)
 {
-    return ltc2668_write(
-        state,
-        selected_dac == LTC2668_ALL_DACS ? LTC2668_CMD_WRITE_ALL : LTC2668_CMD_WRITE_N,
-        selected_dac,
-        code);
+    uint8_t command = LTC2668_CMD_WRITE_N;
+    if (selected_dac == LTC2668_ALL_DACS) {
+        command = LTC2668_CMD_WRITE_ALL;
+        selected_dac = 0;
+    }
+    
+    return ltc2668_write(state, command, selected_dac, code);
 }
 
 int8_t ltc2668_write_and_update_dac(const Ltc2668State* state, int8_t selected_dac, uint16_t code)
 {
-    return ltc2668_write(
-        state,
-        selected_dac == LTC2668_ALL_DACS ? LTC2668_CMD_WRITE_ALL_UPDATE_ALL : LTC2668_CMD_WRITE_N_UPDATE_N,
-        selected_dac,
-        code);
+    uint8_t command = LTC2668_CMD_WRITE_N_UPDATE_N;
+    if (selected_dac == LTC2668_ALL_DACS) {
+        command = LTC2668_CMD_WRITE_ALL_UPDATE_ALL;
+        selected_dac = 0;
+    }
+    
+    return ltc2668_write(state, command, selected_dac, code);
 }
 
 int8_t ltc2668_update_power_up_dac(const Ltc2668State* state, int8_t selected_dac)
 {
-    return ltc2668_write(
-        state,
-        selected_dac == LTC2668_ALL_DACS ? LTC2668_CMD_UPDATE_ALL : LTC2668_CMD_UPDATE_N,
-        selected_dac,
-        0);
+    uint8_t command = LTC2668_CMD_UPDATE_N;
+    if (selected_dac == LTC2668_ALL_DACS) {
+        command = LTC2668_CMD_UPDATE_ALL;
+        selected_dac = 0;
+    }
+    
+    return ltc2668_write(state, command, selected_dac, 0);
 }
     
 int8_t ltc2668_power_down_dac(const Ltc2668State* state, int8_t selected_dac)
 {
-    return ltc2668_write(
-        state,
-        selected_dac == LTC2668_ALL_DACS ? LTC2668_CMD_POWER_DOWN_ALL : LTC2668_CMD_POWER_DOWN_N,
-        selected_dac,
-        0);
+    uint8_t command = LTC2668_CMD_POWER_DOWN_N;
+    if (selected_dac == LTC2668_ALL_DACS) {
+        command = LTC2668_CMD_POWER_DOWN_ALL;
+        selected_dac = 0;
+    }
+    
+    return ltc2668_write(state, command, selected_dac, 0);
 }
 
 int8_t ltc2668_set_softspan(Ltc2668State* state, int8_t selected_dac, uint8_t soft_span)
 {    
-    // keep track of the span of each channel and whether they are all the same
-    if (selected_dac == LTC2668_ALL_DACS) {       
+    uint8_t command;
+    if (selected_dac == LTC2668_ALL_DACS) {  
+        command = LTC2668_CMD_SPAN_ALL;
+        selected_dac = 0;
+        // keep track of the span of each channel and whether they are all the same    
         state->all_same_span = true;
         for (int i = 0; i < LTC2668_NUM_CHANNELS; ++i)
         {
             state->soft_spans[i] = soft_span;
         }
-    } else {       
+        
+    } else { 
+        command = LTC2668_CMD_SPAN;
         state->soft_spans[selected_dac] = soft_span;
         for (int i = 0; i < LTC2668_NUM_CHANNELS; ++i)
         {
@@ -266,21 +278,12 @@ int8_t ltc2668_set_softspan(Ltc2668State* state, int8_t selected_dac, uint8_t so
     }
     
     // actually set the span
-    return ltc2668_write(
-        state,
-        selected_dac == LTC2668_ALL_DACS ? LTC2668_CMD_SPAN_ALL : LTC2668_CMD_SPAN,
-        selected_dac,
-        0);
+    return ltc2668_write(state, command, selected_dac, 0);
 }
     
 int8_t ltc2668_toggle_select(Ltc2668State* state, uint16_t select_bits)
 {
-    return ltc2668_write(
-        state,
-        LTC2668_CMD_TOGGLE_SEL,
-        0,
-        select_bits);
-    
+    return ltc2668_write(state, LTC2668_CMD_TOGGLE_SEL, 0, select_bits);
 }
     
 int8_t ltc2668_set_mux(Ltc2668State* state, uint8_t is_enabled, int8_t selected_dac)
@@ -307,6 +310,6 @@ int8_t ltc2668_set_global_toggle(Ltc2668State* state, uint8_t is_high)
 int8_t ltc2668_ramp(Ltc2668State* state)
 {
     for (int i = 0; i < LTC2668_NUM_CHANNELS; ++i) {
-        ltc2668_write_and_update_dac(state, i, i * LTC2668_FULL_SCALE / LTC2668_NUM_CHANNELS);
+        ltc2668_write_and_update_dac(state, i, uint16_t(i * (float(LTC2668_FULL_SCALE) / LTC2668_NUM_CHANNELS)));
     }
 }
