@@ -274,7 +274,7 @@ void write_and_update(int argc, char* const argv[])
     
     int8_t result = ltc2668_write_and_update_dac(&ltc2668_state, selected_dac, code);
     
-    print_results(&ltc2668_state, result, code, selected_dac, false);
+    print_results(&ltc2668_state, result, code, selected_dac, true);
 }
 
 void update_power_up(int argc, char* const argv[])
