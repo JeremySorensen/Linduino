@@ -195,6 +195,11 @@ bool build_mask(const char* str, uint16_t* mask) {
     if (str == 0) {
         return true;
     }
+
+    if (strcasecmp(str, "all") == 0) {
+        *mask = 0xFFFF;
+        return true;
+    }
     
     uint16_t mask_temp = 0;
     uint8_t index = 0;
@@ -382,8 +387,6 @@ void toggle_select(int argc, char* const argv[])
         return;
     }
     
-    
-    
     if (unset_arg != 0 && !build_mask(unset_arg, &unset_mask)) {
         return;
     }
@@ -392,23 +395,29 @@ void toggle_select(int argc, char* const argv[])
     select_bits |= set_mask;
     select_bits &= ~unset_mask;
     
+    ltc2668_state.select_bits = select_bits;
+    
     int8_t result = ltc2668_toggle_select(&ltc2668_state, select_bits);
+    
     if (check_result(result)) {
-        Serial.print("These select bits are set: ");
-        for (int i = 0; select_bits != 0; ++i) {
-            bool print = (select_bits & 1) != 0;
-            select_bits >>= 1;
-            if (print) {
-                Serial.print(i);
-                if (select_bits != 0) {
-                    Serial.print(", ");
-                } else {
-                    Serial.println("");
+        if (select_bits == 0) {
+            Serial.println("No bits are set");
+        } else {
+            Serial.print("These bits are set: ");
+            for (int i = 0; select_bits != 0; ++i) {
+                bool is_set = (select_bits & 1) != 0;
+                select_bits >>= 1;
+                if (is_set) {
+                    Serial.print(i);
+                    if (select_bits != 0) {
+                        Serial.print(", ");
+                    } else {
+                        Serial.println("");
+                    }
                 }
             }
         }
     }
-    ltc2668_state.select_bits = select_bits;
 }
 
 void set_mux(int argc, char* const argv[]) {
@@ -524,10 +533,12 @@ void setup() {
     s_inter.add_command(
         "select_bits",
         F("[set SET_BITS] [clear CLEAR_BITS] - Set and unset channel select bits\n"
-          "    SET_BITS is comma separated list of bit indices to set\n"
-          "    CLEAR_BITS is comma separated list of bit indices to clear\n"
+          "    SET_BITS is comma separated list of bit indices to set or 'all'\n"
+          "    CLEAR_BITS is comma separated list of bit indices to clear or 'all'\n"
           "    must have 'set SET_BITS' or 'clear CLEAR_BITS' or both\n"
-          "    Example: select_bits set 1,3,7 clear 2,6"),
+          "    Example: select_bits set 1,3,7 clear 2,6\n"
+          "    Example: select_bits set all\n"
+          "    Example: select_bits clear 5"),
         toggle_select,
         2,
         4);
